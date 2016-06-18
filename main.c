@@ -219,6 +219,47 @@ void drawtriangles (Surface *bg) {
 /* ------------------------------------------------------- *
    -------------       SHAPES             ----------------
  * ------------------------------------------------------- */
+/*find max or min from a series*/
+int32_t sortPts (Pt *pts, int8_t axis, _Bool order/*True returns max*/) {
+	Pt *p=pts;
+	int32_t *cmp; 
+	int32_t b=(axis) ? p->x : p->y;
+	while (*(cmp = (!axis) ? &p->x : &p->y) > -1) {
+		(order) ? ((*cmp > b) ? b = *cmp : 0): ((*cmp < b) ? b = *cmp : 0); 
+		p++;
+	}
+	return b;
+}
+
+inline uint8_t 
+find_quadrant (Pt *of, Pt *len, int32_t xmp, int32_t ymp) 
+{
+	int32_t x=of->x, y=of->y;
+
+	/*Check midpoint points*/
+	if (xmp && xmp == x)
+		return (y < (len->y/2)) ? 2 : 7;
+	else if (ymp && ymp == y)
+		return (x < (len->x/2)) ? 4 : 5;
+	else if (ymp && xmp && xmp == x && ymp == y)
+		return 0; // origin, don't do anything...
+
+	int8_t xx,yy;
+	xx = (x < (len->x/2)) ? 0 : 1;
+	yy = (y < (len->y/2)) ? 0 : 1;
+
+	/*This can be a one line monstrosity*/
+	if (!xx && !yy) /*1*/
+		return 1;
+	if (xx && !yy)  /*3*/
+		return 3;
+	if (!xx && yy)  /*2*/
+		return 6;
+	if (xx && yy)   /*4*/
+		return 8;
+	return 0;
+}
+
 /*Let's do a bunch of simple shapes*/
 void drawngons (Surface *bg) 
 {
