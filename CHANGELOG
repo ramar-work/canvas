@@ -1,0 +1,70 @@
+Sun Jun 12 06:28:16 EDT 2016
+	- Took a break to write a visualizer software and a pixel map editor. Fun.
+	- Added VCatch and Catch to canvas to aid in debugging.
+	- NOTE: Merge 'draw_points_from_array' into this.  Handles drawing closed shapes...
+	- NOTE: Also add fast draw.  Division less point location.
+
+*Mon May 23 19:13:36 EDT 2016
+	- Left changes at work again... Sigh.
+	- Changed drawcircles and drawlines and a few other "main loop" function definitions to only modify the current window (or surface).
+	- Got rid of KeySet and mock functions.
+	- Got rid of crappy print command line flags define.
+
+*Sat May 21 19:51:29 EDT 2016
+	- Lots of changes have been made:
+	- 	Changed Pt to use regular int32_t vs uint.  This should reflect in all new code and prevent any overflow/underflow issues...
+	- 	Moved tests back into one file, and also came up with a simpler command line parser.
+	- 	Restructured tests to fit into functions instead of having data structures in different places.
+	- 	Logically organized tests and data structures that belong together.
+	- 	Added a render loop and a mechanism for letting a test run and holding the results
+	- 	Removed tests.c and related .mk files and tests directory.
+	- Got rid of .tarignore dependency in Makefile and updated it to act like other C projects that I'm juggling (using $(IGNORE) flag instead)
+	- Finished removing 'shmup' game test targets in Makefile.   
+	- Got rid of 'stubs' folder with code that's not really relevant to canvas...
+	- Got rid of all traces of canvas as a shared library.  It doesn't work well...
+
+*Mon May  2 19:51:46 EDT 2016
+	- Nothing changed yet, but I've been looking at isometric tiler games and thinking about callbacks for generating large maps.
+*Sun Apr 24 20:31:03 EDT 2016
+	- Started a game called 'shmup'.  This should test how a regular game would work, and also test tools to create bitmaps and test animations.  Again.
+*Fri Apr 22 21:53:17 EDT 2016
+	- Updated plot()'s declaration to use int32_t vs uint16_t.  The old definition would've caused this not to work on super large displays (or surfaces).
+
+*Fri Apr 22 21:47:59 EDT 2016
+	- Started breaking up line generation code.   Making it harder than it should be, so I've switched back to "slow" lines.
+	- Individual point checking is going to be slow, so the rest of the shape primitives will look similar to the line function where I've chosen between a fast implementation and a slow (but tried and true) implementation.   As this library grows up, these seperate files should disappear.
+*Tue Apr 19 21:26:39 EDT 2016
+	- Have not made a new commit yet.   Writing a test that may help map generation in the future.
+*Thu Apr 14 15:11:38 EDT 2016
+	- NOTE TO SELF: This is the 2nd house i've lived in with these damn blue tortilla chips.  Perhaps it's time to buy them.
+	- Added simple bound check to line drawing algorithim.   Checks once at the beginning of the code to make sure that coordinates will be within bounds.
+	- The algorithim before depending on unsigned integers as input.  I think this would solve lots of problems, but for some reason, I'm still able to compile with negative integers as values...
+	- In case it's necessary to use negative integers, I can probably adjust the draw routines for them.  return on values that will never be within the draw area. 
+
+*Tue Apr 12 22:12:14 EDT 2016
+	- Fixed line implementation again.  Could not draw polygons with the implementation from yesterday.  
+	- Added some rudimentary circle drawing abilities.
+	- Can now draw polygons.
+	- Running into some slowdown for coordinates that fall outside of surface range.  Is there a quicker way to do this?
+	- Still lots of defines littered about.
+	- Next, polygon fills and transformations.
+	- Then a simple mini style game like Wario ware.
+
+*Mon Apr 11 16:23:55 EDT 2016
+	- Added rwr() and urwr() functions to handle retrieving random numbers within a range.  
+	- Notice "new" types throughout.  (uint*_t and friends)
+	- Can generate circles (of one width for now...)
+	- Fixed Bresenham bugs, now lines seem to generate fully.
+	- Have not optimized for speed and have yet to get rid of old implementations.
+	- Transformations are the last big thing to add.  Even an editor will be useless without them.
+
+*Sun Apr 10 09:42:16 EDT 2016
+	- Still running into some issues drawing lines.   My Bresenham implementation has got to be buggy.
+	- Added some debug tools and a handler for seg faults.
+	- Added tests, but they are not close to complete.
+
+*Sat Apr  9 21:58:12 EDT 2016
+	- Now I'm breaking up the canvas files.  Instead of one big long document with all the tests embedded, I'm going to split them out to make it easier to look at.
+*Sat Apr  9 19:40:57 EDT 2016
+	- It's kind of working, but having some trouble with preinitializing functions on keypresses.   Making it hard to write "safe" functions.   If using a table instead of a case statement, it should just return some code that causes the loop to "continue" if it's not an accepted code.
+

@@ -1,0 +1,70 @@
+- switching to a simpler method for handling out of bounds lines
+	- reject lines that will never be drawn
+	- reject all points that are negative 
+	- reject all points that are too large
+	x use only positive distances
+	- optimize vert & horiz lines
+	- simplify the rejection code...
+
+
+- move all of that debugging code to debug.c
+
+
+- simplify line and drawing data structures... 
+	lines need x & y
+	circles need one x and one y
+	all the others need a ton of points...
+	the line "stuff" needs to be somewhere else though
+		color, opacity, stroke, antialiasing, polygonFill or not (since the lines will change), saving points versus plotting, fills can be gradients, fills can be imaages, fills can be all other sorts of stuff...
+	other option is to make a define that sets all of this stuff and it's the same data structure...
+	#define draw - draws to surface by replacing function pointer with plot 
+	#define scan - scans a line but draws later...
+
+
+- set up a better timer (nanosleep should work)
+
+
+- breaking up code into #includes is OK with mewhile we're in heavy dev
+
+
+- compilation will speed up greatly if bnd[512] is not initialized at compile time.
+	instead, do it at runtime within main()
+
+
+- globalize the Display Window.  The game loop (or main()) can initialize it... a
+	Dis *dis=NULL; or Window *Dis=NULL;
+
+
+- how to switch the window size (or resolution) on the fly?
+
+
+- line algorithim ready to go...
+
+
+- filled polygons ready to go...
+
+
+- keep reading... 
+
+
+- xplatform builds
+	android
+	iOS
+	Windows 7
+	(Linux / SteamOS)
+	TV? (are these any different?)
+	Nintendo Wii
+	PS4
+	XBox
+	HTML5 / JS (research on this one)
+
+
+- light compression
+	0-F (works for embedded maps...)
+	FAAAAA0A / a super high base might do the trick
+	256colors (unsigned chars work well)
+	1024colors
+
+
+	
+
