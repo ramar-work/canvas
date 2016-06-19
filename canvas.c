@@ -297,8 +297,7 @@ nscan (Surface *win, int32_t x, int32_t y, uint32_t c, uint32_t op, Pt *ptlist) 
 
 
 /*Draw lines*/
-void 
-line (Surface *win, int32_t x0, int32_t y0, int32_t x1, int32_t y1, uint32_t clr, uint32_t opacity)
+void line (Surface *win, int32_t x0, int32_t y0, int32_t x1, int32_t y1, uint32_t clr, uint8_t opacity)
 {
 	/*Display stuff ought to be global.  That's all that there is...*/
 	uint32_t H = win->h - 1; 
@@ -307,6 +306,8 @@ line (Surface *win, int32_t x0, int32_t y0, int32_t x1, int32_t y1, uint32_t clr
 		fprintf(stderr, "Points outside of drawable range.\n");
 		return;
 	}
+
+	fprintf(stderr, "Drawing line from %d,%d -> %d,%d\n", x0, y0, x1, y1);
 
 	/*Define stuff...*/
 	/*A struct will allow this to be oneline*/
@@ -444,11 +445,7 @@ Pt * aline (Surface *win,
 #endif
 
 /*Do allocation of scan structure within line*/
-void sline (Surface *win, 
-           int32_t x0, int32_t y0, 
-           int32_t x1, int32_t y1, 
-           uint32_t clr, uint32_t opacity, 
-					 _Bool save, Pt *ptlist)
+void sline (Surface *win, int32_t x0, int32_t y0, int32_t x1, int32_t y1, uint32_t clr, uint8_t opacity, _Bool save, Pt *ptlist)
 {
 	/*Display stuff ought to be global.  That's all that there is...*/
 	uint32_t H = win->h - 1; 

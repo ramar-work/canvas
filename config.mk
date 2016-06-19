@@ -33,7 +33,7 @@ DFLAGS = -DDEBUG -DBOUNDS_CHECK #-DFASTLINES #-DSLOW -DSPEED=4000 #-DVERBOSE -DB
 # -pg allows for regular profiling
 # PFLAGS = -g -pg 
 # CFLAGS = $(PFLAGS) -fPIC -Wall -Werror -Wno-unused -std=c99 -Wno-deprecated-declarations -O2 -pedantic $(LDDIRS) $(LDFLAGS) $(DFLAGS)
-CFLAGS = -Wall -Werror -Wno-unused -Wstrict-overflow -ansi -std=c99 -Wno-deprecated-declarations -O2 -pedantic-errors $(LDDIRS) $(LDFLAGS) $(DFLAGS)
+CFLAGS = -g -Wall -Werror -Wno-unused -Wstrict-overflow -ansi -std=c99 -Wno-deprecated-declarations -O2 -pedantic-errors $(LDDIRS) $(LDFLAGS) $(DFLAGS)
 
 # Cygwin 
 # CFLAGS = -Wall -Werror -Wno-unused -std=c99 -Wno-deprecated-declarations -O2 -pedantic ${LDFLAGS}

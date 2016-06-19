@@ -225,10 +225,11 @@ void nscan (Surface *win, int32_t x, int32_t y, uint32_t, uint32_t, Pt *ptlist);
 //Pt * aline (Surface *win, int32_t x0, int32_t y0, int32_t x1, int32_t y1, uint32_t c, uint32_t o); 
 /*Do allocation outside (less error prone to me and probably quicker but I want to test this)*/
 
-void sline (Surface *win, int32_t x0, int32_t y0, int32_t x1, int32_t y1, uint32_t c, uint8_t o, _Bool save, Pt *pts); 
+void sline (Surface *win, int32_t x0, int32_t y0, int32_t x1, int32_t y1, uint32_t clr, uint8_t opacity, _Bool save, Pt *ptlist);
 
-#define line(w,x0,y0,x1,y1,clr,op) sline(w, x0, y0, x1, y1, clr, op, 0, NULL)
+void line (Surface *win, int32_t x0, int32_t y0, int32_t x1, int32_t y1, uint32_t c, uint8_t o);
 
+//#define line(w,x0,y0,x1,y1,clr,op) sline(w, x0, y0, x1, y1, clr, op, 0, NULL)
 
 void plot (Surface *win, int32_t x, int32_t y, uint32_t c, uint32_t op);
 
