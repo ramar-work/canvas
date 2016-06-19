@@ -1,3 +1,38 @@
+Sun Jun 19 07:09:18 EDT 2016
+	- Added hold(), a define that will suspend processing until an event is received.   Similar to Catch, but less messing about is needed to make it work.  Add a hook for audio and I ought to be able to use this later.
+	- Got polygon fills working.  The commit message says a lot... 
+    
+    Some issues:
+    - non-convex will not work at all...  will probably cause crashes
+    - Only the current set of tests will work without screwing about.  I still have to clean up the code to make it usable
+    - Need to test MUCH more extensively
+    - Test that static allocation will work on bigger shapes
+    - Negative coordinate points will probably cause crashes
+    - Did I mention cleanup?  There is a LOT of clean up to do.
+    - Add non shaded polygons back into the demo.
+
+	THERE ARE A LOT OF TODOS
+	- I need to mark top and bottom and flat-top.
+	- Test with different colors
+	- Test polygons bigger than the current surface area
+	- Make it work with circles... (should be just point calc, but still)
+	- get rid of coord() function
+	- get rid of any extra defines (i see iforward, ibackward and imove),
+	- all of that fill code ought to be a callback
+	- all of the drawing functions need callbacks
+		(I can't think of a better way to modify gradient, or make dotted lines, etc)
+	- find_quadrant and sortPts need to be in canvas.c, not the test
+	- both also should be static
+	- as well as hold
+	- add basic glyphs (these can be in pd also, but having basic glyphs is great)
+	- timer (hidef, in C, pref not assembler or some other lang)
+	
+	STUFF TO THINK ABOUT
+	- A way to sort convex polygons?
+	- Filling non-convex polygons
+	- When do I need to lock a surface?
+	- Do I really need or want defies for common shapes?
+
 Sun Jun 12 06:28:16 EDT 2016
 	- Took a break to write a visualizer software and a pixel map editor. Fun.
 	- Added VCatch and Catch to canvas to aid in debugging.
@@ -67,4 +102,5 @@ Sun Jun 12 06:28:16 EDT 2016
 	- Now I'm breaking up the canvas files.  Instead of one big long document with all the tests embedded, I'm going to split them out to make it easier to look at.
 *Sat Apr  9 19:40:57 EDT 2016
 	- It's kind of working, but having some trouble with preinitializing functions on keypresses.   Making it hard to write "safe" functions.   If using a table instead of a case statement, it should just return some code that causes the loop to "continue" if it's not an accepted code.
+
 
