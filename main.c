@@ -238,18 +238,6 @@ int32_t get_end (int32_t *arr) {
 /* ------------------------------------------------------- *
    -------------       SHAPES             ----------------
  * ------------------------------------------------------- */
-/*find max or min from a series*/
-static int32_t sortPts (Pt *pts, _Bool axis/*True uses Y*/, _Bool order/*True returns max*/) {
-	Pt *p=pts;
-	int32_t *cmp; 
-	int32_t b=(!axis) ? p->x : p->y;
-	fprintf(stderr, "Sorting axis: %s\n", (!axis) ? "x" : "y");
-	while (*(cmp = (!axis) ? &p->x : &p->y) > -1) {
-		(order) ? ((*cmp > b) ? b = *cmp : 0): ((*cmp < b) ? b = *cmp : 0); 
-		p++;
-	}
-	return b;
-}
 
 inline uint8_t 
 find_quadrant (Pt *of, Pt *len, int32_t xmp, int32_t ymp) 
@@ -281,37 +269,20 @@ find_quadrant (Pt *of, Pt *len, int32_t xmp, int32_t ymp)
 }
 
 
-#define hold() \
-	while ((SDL_PollEvent(&se) == 0)) ;
+#if 0
+#define hold(h) \
+	while ((SDL_PollEvent(&se) == 0) || se.key.keysym.sym != SDLK_RETURN) ;
+#else	
+#define hold(h) getchar()
+#endif
+
+
 
 /*Let's do a bunch of simple shapes*/
 void drawngons (Surface *win) 
 {
 	/*Filled and unfilled*/
 	/*Let's just try fills, NOTE: these are all CONVEX polygons*/
-	/*Nonconvex may cause crashes...*/
-	struct PolyP { Pt p[20]; int32_t color; _Bool sentinel; } Polys[] = {
-		{{{100,98},{50,200} ,{150,230},{-1,-1}}, 0xffffff},                    // triangles work
-		{{{300,300},{200,300},{200,200},{300,200},{-1,-1}}, 0xffffff},          // squares work
-#if 0
-		{{{ 30,400},{500,420},{210,440},{ 50,450},{ 20,420},{-1,-1}}, 0xffffff},// eww...
-		{{{200,400},{220,420},{210,440},{190,440},{180,420},{-1,-1}}, 0xffffff},// eww...
-#endif
-
-		#if 0 /*These test points outside of the surface.*/
-		{{{30,400},{220,420},{210,9999},{500,10321},{180,10024},{-1,-1}}, 0xffffff},// eww...
-		{{{30,400},{20,420},{610,9999},{500,10321},{-1,-1}},0xffffff},// eww...
-		#endif
-		{.sentinel=1}
-	};
-
-	/*Set things that should be calc'd once and references*/
-	uint32_t H = win->h - 1; 
-	uint32_t W = win->w - 1;
-	struct PolyP *p=Polys;
-	SDL_Event se;
-
-	/*Experiment with a datatype for this*/
 	struct polytype {
 		int32_t length;     /*Height of the polygon*/
 		int32_t *trace;     /*....*/
@@ -320,30 +291,76 @@ void drawngons (Surface *win)
 	//(height * 2)  = the amount of x points that we'll need to track
 		int32_t beg, end;   /*These should only be one point.*/
 		int32_t top, bot;   /*These should only be one point.*/
-	} Py[4];
-	int pyc=0;
+	};
+
+	/*Nonconvex may cause crashes...*/
+	struct PolyP { Pt p[20]; int32_t color; struct polytype Py; _Bool sentinel; } Polys[] = {
+	#if 0
+		/*Simple polygons*/
+		{{{100,98},{50,200} ,{150,230},{-1,-1}}, 0xffffff           /*Triangle*/          },
+		{{{300,300},{200,300},{200,200},{300,200},{-1,-1}}, 0xffffff/*Square*/            },
+		{{{ 30,400},{500,420},{210,440},{ 50,450},{ 20,420},{-1,-1}}, 0xffffff},// eww...
+		{{{200,400},{220,420},{210,440},{190,440},{180,420},{-1,-1}}, 0xffffff},// eww...
+
+		/*Complete width and height polygons*/
+		{{{0,0},{639,0},{639,330},{0,200},{-1,-1}}, 0xbbbbbb        /*top half of screen*/},
+		{{{0,200},{0,479},{639,479},{639,330},{-1,-1}}, 0x3f3f3f    /*bot half of screen*/},
+	#endif
+		/*Weird polygons*/	
+	  //{{{0,400},{100,479},{200,309},{-1,-1}}, 0x414141                                  },
+	  {{{200,309},{0,400},{100,479},{-1,-1}}, 0x414141                                  },
+		{{{0,400},{0,479},{100,479},{-1,-1}}, 0x9998b0                           },
+		{{{0,200},{0,479},{639,479},{639,330},{-1,-1}}, 0x123fff             },
+		{{{0,0},{640,0},{640,230},{0,100},{-1,-1}}, 0x323f1f },
+
+		#if 0 /*These test points outside of the surface.*/
+		{{{30,400},{220,420},{210,9999},{500,10321},{180,10024},{-1,-1}}, 0xffffff},// eww...
+		{{{30,400},{20,420},{610,9999},{500,10321},{-1,-1}},0xffffff},// eww...
+		#endif
+		{.sentinel=1}
+	};
+	
+	/*Check for pinching (or sort, without changing order)*/
+
+	/*Set things that should be calc'd once and references*/
+	SDL_Event se;
+	uint32_t H = win->h - 1; 
+	uint32_t W = win->w - 1;
+	struct PolyP *p=Polys;
+
+#if 0
+	while (!p->sentinel) {
+		Pt *c=p->p;
+		fgon(win, c, p->color, 0xff); 
+		p++;
+	}
+#else
+	/*Experiment with a datatype for this*/
+	struct polytype Py[4];
 
 	while (!p->sentinel) {
 		Pt *c=p->p;
+		struct polytype Py = p->Py;
 
 		/*Sort points and find length*/
+		/*Find the index too, and that should solve the misdrawn poly problem.  The next step, though, is to bust out some math that will test for "convexness" of a polygon*/
 		int32_t min = sortPts(c, 1, 0), max = sortPts(c, 1, 1);	
 		int32_t mn = sortPts(c, 0, 0), mx = sortPts(c, 0, 1);	
-		Py[pyc].length=(max - min);
-		Py[pyc].top=min;
-		Py[pyc].bot=max;
+		Py.length=(max - min);
+		Py.top=min;
+		Py.bot=max;
+
 			
 		/*Allocate 2x height and space for top and bottom points */
 		int32_t ints[((max - min) * 2) + 2];
 		memset(&ints, 0, sizeof(ints)/sizeof(int32_t));
-		Py[pyc].trace = &ints[0];
-		Py[pyc].tlen = sizeof(ints)/sizeof(int32_t);
+		Py.trace = &ints[0];
+		Py.tlen = sizeof(ints)/sizeof(int32_t);
 
 		/*Debug*/
 		fprintf(stderr, "y pos: %d, %d\n", min, max);
 		fprintf(stderr, "x pos: %d, %d\n", mn, mx);
-		//fprintf(stderr, "length: %d, sizeof(ints): %d\n", Py[pyc].length, Py[pyc].tlen);
-		getchar();
+		//fprintf(stderr, "length: %d, sizeof(ints): %d\n", Py.length, Py.tlen);
 		/*Check for flat top & bottom*/
 		/*(I don't know how to do this yet, these tests don't solve this problem)*/
 
@@ -377,7 +394,7 @@ void drawngons (Surface *win)
 
 			// if y0 == y1, save endpoints and continue
 			if (y0 == y1) {
-				Py[pyc].trace[i]=y0, Py[pyc].trace[i+1]=y1; 
+				Py.trace[i]=y0, Py.trace[i+1]=y1; 
 				fprintf(stderr, "Got horizontal line...");
 				curr++;
 				continue;
@@ -424,20 +441,20 @@ void drawngons (Surface *win)
 			while (pixCount--) {
 				/*Draw the point while debugging*/
 				fprintf(stderr, "point at: %d, %d\n",*x,*y);
-				//hold();
+				//getchar();
 				plot(win,*x,*y,p->color,0xff);
 		
 				/*Only save if a certain criteria match*/
 				if (yIsMajor) {
 					// save the same x multiple times...
-					Py[pyc].trace[i] = *x;
+					Py.trace[i] = *x;
 					fprintf(stderr, "Saving point x, plotting point y [%d, %d]\n", *x, *y); 
 					i++;
 				}
 				else { 
 					// Only save x when y changes?
 					if (oy != *y) {
-						Py[pyc].trace[i] = *x;
+						Py.trace[i] = *x;
 						fprintf(stderr, "Saving point x, when y changes [%d, %d]\n", *x, *y); 
 						oy=*y;
 						i++;
@@ -458,43 +475,53 @@ void drawngons (Surface *win)
 			};
 			curr++;
 		}
-	
+
 		/*Set up the shading*/
-		int bl=Py[pyc].length-1, br=Py[pyc].length;
-		int start=Py[pyc].bot;
+		int bl=Py.length-1, br=Py.length;
+		int start=Py.bot;
 
 		/*Echo eveyrthing*/
-		fprintf(stderr, "height of gon: %d\n", Py[pyc].length);		
-		fprintf(stderr, "find end of gon:    %d\n", get_end(Py[pyc].trace));
-		fprintf(stderr, "start point:        %d\n", Py[pyc].bot);
-		fprintf(stderr, "total length:       %d\n", Py[pyc].length);
+		fprintf(stderr, "height of gon:      %d\n", Py.length);
+		fprintf(stderr, "find end of gon:    %d\n", get_end(Py.trace));
+		fprintf(stderr, "start point:        %d\n", Py.bot);
+		fprintf(stderr, "total length:       %d\n", Py.length);
 		fprintf(stderr, "left side up:       %d\n", bl); 
 		fprintf(stderr, "right side up:      %d\n", br); 
+		fprintf(stderr, "trace[mid-1]: %d\n", Py.trace[bl]); 
+		fprintf(stderr, "trace[mid]:   %d\n", Py.trace[br]); 
+		fprintf(stderr, "press enter to continue\n"); 
+		getchar();
 
-		#if 0
-		int cuz=Py[pyc].bot;
-		for (int p=0;p<Py[pyc].length;p++,cuz--)
+		#if 1
+		// drawing order matters... start at top or bottom
+		int cuz=Py.bot;
+		for (int p=0;p<(Py.length * 2);p++,cuz--) {
 			fprintf(stderr, "%d,%d - ", p, cuz);
+			if ((p % 10) == 0) fprintf(stderr, "\n");
+		}
+		getchar();
 		#endif
-		//hold();
 
 		/*Shade the polygon*/
-		while (Py[pyc].length--) {
-			line(win, Py[pyc].trace[bl], start, Py[pyc].trace[br], start, p->color, 0xff); 
+		while (Py.length--) {
+			line(win, Py.trace[bl], start, Py.trace[br], start, p->color, 0xff); 
 			bl--, br++, start--;
 			SDL_UpdateRect(win->win, 0, 0, 0, 0);
+			getchar();
 			//hold();
 		}
 			
-		hold();	
+		hold(1);	
 		p++;
-		pyc++;
+
+		fill_display(win, 0x000000);
+		SDL_UpdateRect(win->win, 0, 0, 0, 0);
 	}
 
 	SDL_UpdateRect(win->win, 0, 0, 0, 0);
 	transit();
+#endif
 }
-
 
 /*
 - get the approximate length of the gon by doing calculations
@@ -573,6 +600,29 @@ void drawglyphs (Surface *win) {
 	return;
 }
 
+
+void drawgonz (Surface *win) {
+	// data
+	Pt a[]={{0,0},{639,0},{639,330},{0,200},{-1,-1}};
+	Pt b[]={{0,200},{0,479},{639,479},{639,330},{-1,-1}};
+	Pt c[]={{410,284},{450,292},{170,479},{0,479},{40,479},{-1,-1}};
+	Pt d[]={{410,224},{450,230},{450,292},{410,284},{-1,-1}};
+	Pt e[]={{450,292},{450,479},{170,479},{-1,-1}};
+	//Pt d[]={{0,400},{0,479},{100,479},{-1,-1}};
+	//Pt d[]={{0,200},{0,479},{639,479},{639,330},{-1,-1}};
+	//Pt c[]={{0,0},{640,0},{640,230},{0,100},{-1,-1}};
+	//Pt d[]={{0,0},{640,0},{640,230},{0,100},{-1,-1}};
+	// did it work
+	// let's loop an animation
+	// yay....
+	fgon(win, a, 0xdddddd, 0xff);
+	fgon(win, b, 0x333333, 0xff);
+	fgon(win, c, 0x8729e1, 0xff);
+	fgon(win, d, 0x000000, 0xff);
+	fgon(win, e, 0x444444, 0xff);
+	SDL_UpdateRect(win->win, 0, 0, 0, 0);
+	getchar();
+}
 	
 /* ------------------------------------------------------- *
    -------------       END TESTS          ----------------
@@ -678,7 +728,8 @@ main (int argc, char *argv[])
 		else if (optset("--circles")) 
 			drawcircles(&Win);
 		else if (optset("--polygons")) 
-			drawngons(&Win);
+			drawgonz(&Win);
+			//drawngons(&Win);
 		else if (optset("--triangles")) 
 			drawtriangles(&Win);
 		else if (optset("--glyphs")) 

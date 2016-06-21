@@ -1,3 +1,11 @@
+
+when running the line algo, check that points are not greater than W - 1 (and H - 1) (a canvas thing)
+
+When drawing polygons, the routine must start at the TOP or the BOTTOM
+
+then, when you sort, you have to check for distance between points (but not really, b/c that's not always a sign of "convexness" 
+
+
 - switching to a simpler method for handling out of bounds lines
 	- reject lines that will never be drawn
 	- reject all points that are negative 

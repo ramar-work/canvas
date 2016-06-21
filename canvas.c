@@ -241,6 +241,26 @@ void transform (Surface *s) {
 }
 
 
+/*Functions that should be static can go here*/
+/*When this has reached stability they get removed*/
+/*find max or min from a series*/
+#if 1
+int32_t 
+#else
+static int32_t 
+#endif
+sortPts (Pt *pts, _Bool axis/*True = Y*/, _Bool order/*True = get max*/) {
+	Pt *p=pts;
+	int32_t *cmp; 
+	int32_t b=(!axis) ? p->x : p->y;
+	//fprintf(stderr, "Sorting axis: %s\n", (!axis) ? "x" : "y");
+	while (*(cmp = (!axis) ? &p->x : &p->y) > -1) {
+		(order) ? ((*cmp > b) ? b = *cmp : 0): ((*cmp < b) ? b = *cmp : 0); 
+		p++;
+	}
+	return b;
+}
+
 /* ---------------- LINES ----------------------- */
 /*Plot points, checking that each is within range*/
 inline void 
@@ -558,33 +578,188 @@ void ngon (Surface *win, Poly *poly, uint32_t stroke, uint32_t fill, uint32_t op
 		printf("%d, %d -> %d, %d\n", pc->x, pc->y, pn->x, pn->y);
 		line(win, pc->x, pc->y, pn->x, pn->y, stroke, 0xff);
 	}
+}
+
+
+/*Just draw a filled polygon.*/
+void fgon (Surface *win, Pt *pts, uint32_t color, uint32_t op) {
+	/*Set things that should be calc'd once and references*/
+	uint32_t H = win->h - 1; 
+	uint32_t W = win->w - 1;
+
+	/*Experiment with a datatype for this*/
+	struct polytype {
+		int32_t length;     /*Height of the polygon*/
+		int32_t *trace;     /*....*/
+		int32_t tlen;
+	//we also know that there will be at least a multiple of two points
+	//(height * 2)  = the amount of x points that we'll need to track
+		int32_t beg, end;   /*These should only be one point.*/
+		int32_t top, bot;   /*These should only be one point.*/
+	} Py;
+
+
+	/*Sort points and find length*/
+	Pt *c=pts;
+	int32_t min = sortPts(c, 1, 0), max = sortPts(c, 1, 1);	
+	int32_t mn = sortPts(c, 0, 0), mx = sortPts(c, 0, 1);	
+	Py.length=(max - min);
+	Py.top=min;
+	Py.bot=max;
+		
+	/*Allocate 2x height and space for top and bottom points */
+	int32_t ints[((max - min) * 2) + 2];
+	memset(&ints, 0, sizeof(ints)/sizeof(int32_t));
+	Py.trace = &ints[0];
+	Py.tlen = sizeof(ints)/sizeof(int32_t);
+
+	/*Debug*/
+	fprintf(stderr, "y pos: %d, %d\n", min, max);
+	fprintf(stderr, "x pos: %d, %d\n", mn, mx);
+	//fprintf(stderr, "length: %d, sizeof(ints): %d\n", Py.length, Py.tlen);
+	/*Check for flat top & bottom*/
+	/*(I don't know how to do this yet, these tests don't solve this problem)*/
+
+	/*Set up variables needed to trace the polygon*/
+	int on=1;
+	int i=0;
+	Pt *curr=c, *next=c+1, *home=&c[0];
+
+	/*Trace the polygon*/
+	while (on) {
+		/*Move through all points until you reach "home"*/
+		on = ((next = ((curr+1)->x > -1 || (curr+1)->y > -1) ? curr+1 : home) == home) ? 0 : 1;
+		int32_t x0=curr->x, y0=curr->y;
+		int32_t x1=next->x, y1=next->y;
+		//fprintf(stderr, "(%d,%d) -> (%d, %d)\n", x0, y0, x1, y1);
+
+		/*Shut out points not within a particular range (this is a bad idea...)*/
+		if ((x0<0 && x1<0)||(y0<0 && y1<0)||(x0>W && x1>W)||(y0>H && y1>H)) {
+			fprintf(stderr, "Points of polygon outside of drawable range.\n");
+			curr++;
+			continue;	
+		}
+
+		/*Define stuff...*/
+		int32_t pixCount, errInc, errDec, errInd, mn, mj; 
+		int32_t *x=NULL, *y=NULL;
+		int32_t dx=0, dy=0, dx2, dy2;
+		int mnc, mjc;
+		int32_t oy=0;
+		_Bool yIsMajor=0;
+
+		// if y0 == y1, save endpoints and continue
+		if (y0 == y1) {
+			Py.trace[i]=y0, Py.trace[i+1]=y1; 
+			fprintf(stderr, "Got horizontal line...");
+			curr++;
+			continue;
+		}
+		
+		/*Figure out minor & major axes, and increment point*/
+		get_slope(dx, dy, x0, y0, x1, y1); 
+		dx2 = dx*2, dy2 = dy*2;
+
+		/*Set depending on slope*/			
+		if (dx>dy) {
+			yIsMajor=0;
+			pixCount = dx;
+			errInc = dy2;
+			errDec = dx2;
+			mn = y0;
+			mj = x0;
+			mjc = (x1>x0) ? 1 : -1;
+			mnc = (y1>y0) ? 1 : -1;
+			x = &mj;
+			y = &mn;
+			errInd = dy2-dx; 
+			oy = *y;
+		}
+		else {
+			yIsMajor=1;
+			pixCount = dy;
+			errInc = dx2;
+			errDec = dy2;
+			mn = x0;
+			mj = y0;
+			mjc = (y1>y0) ? 1 : -1;
+			mnc = (x1>x0) ? 1 : -1;
+			x = &mn;
+			y = &mj;
+			errInd = dx2-dy; 
+		}
+
+		/*Save the first point if it's not flat topped*/
+		fprintf(stderr, "Major index is: %s\n", !yIsMajor ? "x" : "y");
+		fprintf(stderr, "x0: %d, y0: %d, x1: %d, y1: %d\n", x0, y0, x1, y1); 
+
+		/*Save only the x's from the line*/
+		while (pixCount--) {
+			/*Draw the point while debugging*/
+			fprintf(stderr, "point at: %d, %d\n",*x,*y);
+			//hold();
+			plot(win,*x,*y,color,op);
+	
+			/*Only save if a certain criteria match*/
+			if (yIsMajor) {
+				// save the same x multiple times...
+				Py.trace[i] = *x;
+				fprintf(stderr, "Saving point x, plotting point y [%d, %d]\n", *x, *y); 
+				i++;
+			}
+			else { 
+				// Only save x when y changes?
+				if (oy != *y) {
+					Py.trace[i] = *x;
+					fprintf(stderr, "Saving point x, when y changes [%d, %d]\n", *x, *y); 
+					oy=*y;
+					i++;
+				}
+			}
+
+			/*Calculate error index*/
+			if (errInd >= 0) {
+				// should "reset" the error index.
+				errInd += (errInc - errDec);
+				mn += mnc;   // minor index should go up
+			}
+			else {
+				errInd += errInc;	
+			}
+			mj += mjc;
+		};
+		curr++;
+	}
+
+	/*Set up the shading*/
+	int bl=Py.length-1, br=Py.length;
+	int start=Py.bot;
+
+	/*Echo eveyrthing*/
+	fprintf(stderr, "height of gon: %d\n", Py.length);		
+	//fprintf(stderr, "find end of gon:    %d\n", get_end(Py.trace));
+	fprintf(stderr, "start point:        %d\n", Py.bot);
+	fprintf(stderr, "total length:       %d\n", Py.length);
+	fprintf(stderr, "left side up:       %d\n", bl); 
+	fprintf(stderr, "right side up:      %d\n", br); 
+
+	#if 0
+	int cuz=Py.bot;
+	for (int p=0;p<Py.length;p++,cuz--)
+		fprintf(stderr, "%d,%d - ", p, cuz);
+	#endif
+	//hold();
+
+	/*Shade the polygon*/
+	while (Py.length--) {
+		line(win, Py.trace[bl], start, Py.trace[br], start, color, op); 
+		bl--, br++, start--;
+		//SDL_UpdateRect(win->win, 0, 0, 0, 0);
+		//hold();
+	}
 } 
 
 
-#define iforward(Index) \
-	Index = (Index + 1) % poly->length;
-
-#define ibackward(Index) \
-	Index = (Index - 1 + poly->length) % poly->length;
-	
-#define imove(Index, Dir) \
-	if (Dir > 0) \
-		Index = (Index + 1) % poly->length; \
-	else \
-		Index = (Index - 1 + poly->length) % poly->length;
-
-
-#if 0
-/*Horizontal lines*/
-typedef struct HLines HLines;
-struct HLines {
-};
-
-/*Vertical lines*/
-typedef struct VLines VLines;
-struct VLines {
-};
-#endif
 
 int 
 FillConvexNGon (Surface *win, Poly *poly, uint32_t stroke, uint32_t fill, uint32_t opacity) 

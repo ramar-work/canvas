@@ -258,6 +258,8 @@ void circle (Surface *win, uint16_t x, uint16_t y, uint16_t radius, uint32_t c, 
 
 void ngon (Surface *win, Poly *poly, uint32_t stroke, uint32_t fill, uint32_t opacity);
 
+void fgon (Surface *win, Pt *pts, uint32_t color, uint32_t op);
+
 int FillConvexNGon (Surface *win, Poly *poly, uint32_t stroke, uint32_t fill, uint32_t opacity);
 
 void draw_from_point_array (Surface *srf, Pt *pt, void (*callback)(Pt *));
@@ -280,4 +282,9 @@ extern int on;
 	#define SPEED 5000 /*Auto sleep for 5000 nanoseconds*/	
  #endif
 #endif
+
+#if 1
+int32_t sortPts (Pt *pts, _Bool axis/*True uses Y*/, _Bool order/*True returns max*/);
+#endif
+
 #endif
