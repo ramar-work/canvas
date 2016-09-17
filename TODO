@@ -1,10 +1,63 @@
+x *refactor your tests to maintain your sanity
+	struct Test { char *name, _Bool run, void (*test)(args...) }[]
+x *use lite for options instead of custom rolled Opt, b/c it's also long
+x *remove the extra defines that draw common shapes. I don't use them anywhere else and they're ugly and they're primitives...
 
+*tests should just be data structures too
+	what is a line but { a, b, color }
+	what is a circle but { pt, radius, color, fill }
+	what is a triangle but { pt, pt, pt, color, fill }
+	what is a rectangle but { pt, width?, height, color, fill }
+	what is a polygon but { pt * } (this one admittedly, is a little harder...)
+	you can test that it worked by looking and also by sampling the pixel in the surface...
+
+*call randseed once when initializing SDL (or canvas or what the hell ever)
+*use bools or ints to return tests, 
+	bools to tell if things failed
+	ints to return things like timing and iterations
+*use a define for 
+	being verbose
+	drawing slow
+	drawing by interrupt (both can't be enabled cleanly)
+		(drawing per point isn't helpful b/c it's so slow)
+	pause
+*ONE line function (you've got 3 right now)
+*coord is useless...
+*debug your polygon fill routine
+
+defines
+=======
+slow draw
+interrupt draw
+
+debug
+=====
+- move all of that debugging code to debug.c
+- simplify line and drawing data structures... 
+	all the others need a ton of points...
+- print structure code either in print.c or debug.c and include with #defines...
+
+lines
+=====
 when running the line algo, check that points are not greater than W - 1 (and H - 1) (a canvas thing)
+lines need x & y
+	the line "stuff" needs to be somewhere else though
+		color, opacity, stroke, antialiasing, polygonFill or not (since the lines will change), saving points versus plotting, fills can be gradients, fills can be imaages, fills can be all other sorts of stuff...
+	other option is to make a define that sets all of this stuff and it's the same data structure...
+#define draw - draws to surface by replacing function pointer with plot 
+#define scan - scans a line but draws later...
 
+
+circles
+=======
+circles need one x and one y
+
+
+polygons
+========
 When drawing polygons, the routine must start at the TOP or the BOTTOM
 
-then, when you sort, you have to check for distance between points (but not really, b/c that's not always a sign of "convexness" 
-
+then, when you sort, you have to check for distance between points (but not really, b/c that's not always a sign of "convexness")
 
 - switching to a simpler method for handling out of bounds lines
 	- reject lines that will never be drawn
@@ -15,21 +68,14 @@ then, when you sort, you have to check for distance between points (but not real
 	- simplify the rejection code...
 
 
-- move all of that debugging code to debug.c
+text
+====
+is included in SDL_TrueType, but it'd be great to figure out how to ship something small that works...
 
 
-- simplify line and drawing data structures... 
-	lines need x & y
-	circles need one x and one y
-	all the others need a ton of points...
-	the line "stuff" needs to be somewhere else though
-		color, opacity, stroke, antialiasing, polygonFill or not (since the lines will change), saving points versus plotting, fills can be gradients, fills can be imaages, fills can be all other sorts of stuff...
-	other option is to make a define that sets all of this stuff and it's the same data structure...
-	#define draw - draws to surface by replacing function pointer with plot 
-	#define scan - scans a line but draws later...
-
-
-- set up a better timer (nanosleep should work)
+timing
+======
+set up a better timer (nanosleep should work)
 
 
 - breaking up code into #includes is OK with mewhile we're in heavy dev
@@ -39,22 +85,16 @@ then, when you sort, you have to check for distance between points (but not real
 	instead, do it at runtime within main()
 
 
+display / initialization
+========================
 - globalize the Display Window.  The game loop (or main()) can initialize it... a
 	Dis *dis=NULL; or Window *Dis=NULL;
-
 
 - how to switch the window size (or resolution) on the fly?
 
 
-- line algorithim ready to go...
-
-
-- filled polygons ready to go...
-
-
-- keep reading... 
-
-
+builds
+======
 - xplatform builds
 	android
 	iOS
@@ -67,6 +107,8 @@ then, when you sort, you have to check for distance between points (but not real
 	HTML5 / JS (research on this one)
 
 
+compression (should be in lite)
+===============================
 - light compression
 	0-F (works for embedded maps...)
 	FAAAAA0A / a super high base might do the trick

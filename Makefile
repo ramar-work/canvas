@@ -3,7 +3,7 @@ include config.mk
 #include tests.mk
 
 NAME = canvas
-SRC = canvas.c main.c 
+SRC = canvas.c lite.c main.c 
 OBJ = ${SRC:.c=.o}
 #UPDATE = lineslow.c
 #GAMENAME = sm 

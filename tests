@@ -1,4 +1,0 @@
-when running the line algo, check that points are not greater than W - 1 (and H - 1)
-
-
-	  {{{0,400},{100,479},{200,309},{-1,-1}}, 0x414141                                  },

@@ -8,10 +8,6 @@
 #ifndef CANVAS_H
 #define CANVAS_H
 
-#define errstat(x, ...) while (0) { \
-	fprintf(stderr, "%s", "ERROR OCCURRED: "); \
-	fprintf(stderr, __VA_ARGS__); }
-
 #define errabrt(x, ...) while (0) { \
 	fprintf(stderr, "%s", "ERROR OCCURRED: "); \
 	fprintf(stderr, __VA_ARGS__); return x; }
@@ -89,7 +85,7 @@ void print_debug ();
 
 void set_sigsegv ();
 
-void pause (uint32_t secs, uint32_t nsecs);
+void __pause (uint32_t secs, uint32_t nsecs);
 
 typedef struct Pause Pause;
 struct Pause { char type; union { uint32_t secs, msecs, usecs, nsecs; } time; }; 

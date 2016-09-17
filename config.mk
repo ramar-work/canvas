@@ -26,7 +26,9 @@ CC = cc
 #	-DBOUNDS_CHECKL  - Do bounds checking at line 
 #	-DDEBUG          - Do bounds checking at line 
 #  -DGIANTSCREEN    - Use 32 bit integers for large surfaces
-DFLAGS = -DDEBUG -DBOUNDS_CHECK #-DFASTLINES #-DSLOW -DSPEED=4000 #-DVERBOSE -DBOUNDS_CHECK
+DFLAGS = -DDEBUG \
+	-DBOUNDS_CHECK
+	#-DTESTS_H #-DFASTLINES #-DSLOW -DSPEED=4000 #-DVERBOSE -DBOUNDS_CHECK
 
 # Performance profiling, comment this if you want none...
 # -g allows for source annotations

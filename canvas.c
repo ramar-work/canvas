@@ -1,13 +1,16 @@
 /*canvas.c*/
 #define _POSIX_C_SOURCE 200809L
+#include <stdio.h>
+#include <inttypes.h>
+#include <stdlib.h>
+#include <time.h>
 #include "canvas.h"
+#include "lite.h"
 
-/*Some global variables that never change go here.*/
-FILE *std = NULL;
-
-#if 1  /*Eventually this is all DEBUG or NDEBUG or something*/
+//#ifdef CV_DEBUG  /*Eventually this is all DEBUG or NDEBUG or something*/
+#if 1
  #if 1
- inline void pause (uint32_t secs, uint32_t nsecs) { 
+ inline void __pause (uint32_t secs, uint32_t nsecs) { 
 	//struct timespec ts = { .tv_nsec = nsecs };
 	struct timespec ts = { .tv_sec = secs, .tv_nsec = nsecs };
 	nanosleep(&ts, NULL);
@@ -34,9 +37,8 @@ FILE *std = NULL;
  #endif
 
 
-/*Catch - to catch keystrokes without having to do much extra*/
-inline void __catch (SDL_Event *ev, char *msg, int only, SDLKey key) 
-{
+ /*Catch - to catch keystrokes without having to do much extra*/
+ inline void __catch (SDL_Event *ev, char *msg, int only, SDLKey key) {
 	if (msg) { fprintf(stderr, "%s\n", msg); }
 	while (1) {
 		if (SDL_PollEvent(ev)) {
@@ -44,9 +46,7 @@ inline void __catch (SDL_Event *ev, char *msg, int only, SDLKey key)
 				break;
 		}
 	}
-}
- 
- void std_debug (void *p) { ; }
+ }
  
  void print_debug () {
  	fprintf(stderr, "ERROR OCCURRED (at %s:%d", debug.file, debug.line);
@@ -56,7 +56,6 @@ inline void __catch (SDL_Event *ev, char *msg, int only, SDLKey key)
  	exit(1);
  }
  
- 
  void set_sigsegv () {
  	struct sigaction sa;
  	sa.sa_handler = print_debug; 
@@ -65,33 +64,6 @@ inline void __catch (SDL_Event *ev, char *msg, int only, SDLKey key)
  		fprintf(stderr, "%s\n", strerror(errno));
  		return;
  	}
- }
-
- void print_surface (Surface *s) {
-	//p = sf = s->win;
-	SDL_PixelFormat *p = s->win->format;
-	fprintf(stderr, "Height:  %d\n", s->h);
-	fprintf(stderr, "Width:   %d\n", s->w);
-	//fprintf(stderr, "Height:  %d\n", s->hh; )
-	//fprintf(stderr, "Height:  %d\n", s->ww; )
-	fprintf(stderr, "BPP:     %d\n", s->bpp);
-	fprintf(stderr, "Chroma:  %d\n", s->chromakey);
-	fprintf(stderr, "BgColor: %d\n", s->bg);
-	fprintf(stderr, "Resizb:  %d\n", s->resizable );
-	fprintf(stderr, "HW Surf: %d\n", s->hwsw      );
-	fprintf(stderr, "Fullscr: %d\n", s->fullscreen);
-	fprintf(stderr, "Alpha:   %d\n", s->alpha     );
-	fprintf(stderr, "Video:   %d\n", s->video     );
-	fprintf(stderr, "DB Buf:  %d\n", s->dbbuf     );
-	fprintf(stderr, "Position:(%d, %d)\n", s->position.x, s->position.y);
-	//fprintf(stderr, "Surface: %p\n", (void *)s->srf);
-	fprintf(stderr, "Userdata:%p\n", s->ud);
-	fprintf(stderr, "Window:  %p\n", (void *)s->win);
-	fprintf(stderr, "\t(SDL_Surface data)\n"); 
-	fprintf(stderr, "\tRGB values:     %-3d, %-3d, %-3d\n", 
-		p->Rmask, p->Gmask, p->Bmask);
-	fprintf(stderr, "\tBits per pixel: %d\n", p->BitsPerPixel);
-	fprintf(stderr, "\tAlpha mask:     %d\n", p->Amask);
  }
 
  typedef struct LinePoint LinePoint;
@@ -106,10 +78,7 @@ inline void __catch (SDL_Event *ev, char *msg, int only, SDLKey key)
 
 /*Random number generator functions*/
 #define randseed() \
-	struct timespec gtimespec = { .tv_nsec = 10 }; \
 	struct timeval now; \
-	if ((nanosleep(&gtimespec, NULL) < 0)) \
-		return 0; \
 	gettimeofday(&now, NULL); \
 	srand(now.tv_usec)
 
@@ -277,7 +246,7 @@ plot (Surface *win, int32_t x, int32_t y, uint32_t c, uint32_t op) {
 
  #ifdef SLOW
 	/*Move super slowly*/
-	pause(0, SPEED);
+	__pause(0, SPEED);
 	SDL_UpdateRect(win->win, 0,0,0,0);
  #endif
 }
@@ -527,18 +496,6 @@ void sline (Surface *win, int32_t x0, int32_t y0, int32_t x1, int32_t y1, uint32
 			errInd += errInc;	
 		}
 		mj += mjc;
-	}
-}
-
-
-
-/* Plot a point larger than a single pixel.*/
-void coord (Surface *win, uint16_t x, uint16_t y, uint32_t c, uint32_t op, uint32_t w) {
-// does dotting and more
-	for (int xx=(x-w);xx<(x+w);xx++) {	
-		for (int yy=(y-w);yy<(y+w);yy++) {	
-			plot(win, xx, yy, c, op); 
-		}
 	}
 }
 
@@ -805,30 +762,30 @@ FillConvexNGon (Surface *win, Poly *poly, uint32_t stroke, uint32_t fill, uint32
 /* ---------------- INPUT ----------------------- */
 /*Keysym table*/
 static int keysyms[] = {
-	['\b'] = SDLK_BACKSPACE,    ['\t'] = SDLK_TAB,      ['\r'] = SDLK_RETURN,
-	[' ']  = SDLK_SPACE,        ['!']  = SDLK_EXCLAIM,  ['"']  = SDLK_QUOTEDBL,
-	['#']  = SDLK_HASH,         ['$'] = SDLK_DOLLAR,    ['&'] = SDLK_AMPERSAND,
-	['('] = SDLK_LEFTPAREN,     [')'] = SDLK_RIGHTPAREN,['*'] = SDLK_ASTERISK, 
-	['+'] = SDLK_PLUS,          [','] = SDLK_COMMA,     ['-'] = SDLK_MINUS,
-	['.'] = SDLK_PERIOD,        ['/'] = SDLK_SLASH,     ['0'] = SDLK_0,
-	['1'] = SDLK_1,             ['2'] = SDLK_2, ['3'] = SDLK_3,
-	['4'] = SDLK_4, ['5'] = SDLK_5, ['6'] = SDLK_6,
-	['7'] = SDLK_7, ['8'] = SDLK_8, ['9'] = SDLK_9,
-	[':'] = SDLK_COLON, [';'] = SDLK_SEMICOLON, ['<'] = SDLK_LESS,
-	['='] = SDLK_EQUALS, ['>'] = SDLK_GREATER, ['?'] = SDLK_QUESTION,
-	['@'] = SDLK_AT, ['['] = SDLK_LEFTBRACKET, [']'] = SDLK_RIGHTBRACKET,
-	['^'] = SDLK_CARET, ['_'] = SDLK_UNDERSCORE,['`'] = SDLK_BACKQUOTE,
-	['a'] = SDLK_a, ['b'] = SDLK_b, ['c'] = SDLK_c,
-	['d'] = SDLK_d, ['e'] = SDLK_e, ['f'] = SDLK_f,
-	['g'] = SDLK_g,['h'] = SDLK_h, ['i'] = SDLK_i,
-	['j'] = SDLK_j,['k'] = SDLK_k,['l'] = SDLK_l,
-	['m'] = SDLK_m,['n'] = SDLK_n,['o'] = SDLK_o, 
-	['p'] = SDLK_p,['q'] = SDLK_q,['r'] = SDLK_r,
-	['s'] = SDLK_s,['t'] = SDLK_t,['u'] = SDLK_u,
-	['v'] = SDLK_v,['w'] = SDLK_w,['x'] = SDLK_x,
-	['y'] = SDLK_y,['z'] = SDLK_z,['.'] = SDLK_KP_PERIOD,
+	['\b']= SDLK_BACKSPACE,['\t']= SDLK_TAB,        ['\r']= SDLK_RETURN,
+	[' '] = SDLK_SPACE,    ['!'] = SDLK_EXCLAIM,    ['"'] = SDLK_QUOTEDBL,
+	['#'] = SDLK_HASH,     ['$'] = SDLK_DOLLAR,     ['&'] = SDLK_AMPERSAND,
+	['('] = SDLK_LEFTPAREN,[')'] = SDLK_RIGHTPAREN, ['*'] = SDLK_ASTERISK, 
+	['+'] = SDLK_PLUS,     [','] = SDLK_COMMA,      ['-'] = SDLK_MINUS,
+	['.'] = SDLK_PERIOD,   ['/'] = SDLK_SLASH,      ['0'] = SDLK_0,
+	['1'] = SDLK_1,        ['2'] = SDLK_2,          ['3'] = SDLK_3,
+	['4'] = SDLK_4,        ['5'] = SDLK_5,          ['6'] = SDLK_6,
+	['7'] = SDLK_7,        ['8'] = SDLK_8,          ['9'] = SDLK_9,
+	[':'] = SDLK_COLON,    [';'] = SDLK_SEMICOLON,  ['<'] = SDLK_LESS,
+	['='] = SDLK_EQUALS,   ['>'] = SDLK_GREATER,    ['?'] = SDLK_QUESTION,
+	['@'] = SDLK_AT,       ['['] = SDLK_LEFTBRACKET,[']'] = SDLK_RIGHTBRACKET,
+	['^'] = SDLK_CARET,    ['_'] = SDLK_UNDERSCORE, ['`'] = SDLK_BACKQUOTE,
+	['a'] = SDLK_a,        ['b'] = SDLK_b,          ['c'] = SDLK_c,
+	['d'] = SDLK_d,        ['e'] = SDLK_e,          ['f'] = SDLK_f,
+	['g'] = SDLK_g,        ['h'] = SDLK_h,          ['i'] = SDLK_i,
+	['j'] = SDLK_j,        ['k'] = SDLK_k,          ['l'] = SDLK_l,
+	['m'] = SDLK_m,        ['n'] = SDLK_n,          ['o'] = SDLK_o, 
+	['p'] = SDLK_p,        ['q'] = SDLK_q,          ['r'] = SDLK_r,
+	['s'] = SDLK_s,        ['t'] = SDLK_t,          ['u'] = SDLK_u,
+	['v'] = SDLK_v,        ['w'] = SDLK_w,          ['x'] = SDLK_x,
+	['y'] = SDLK_y,        ['z'] = SDLK_z,          ['.'] = SDLK_KP_PERIOD,
 	['/'] = SDLK_KP_DIVIDE,['*'] = SDLK_KP_MULTIPLY,['-'] = SDLK_KP_MINUS,
-	['+'] = SDLK_KP_PLUS,['\r'] = SDLK_KP_ENTER,['='] = SDLK_KP_EQUALS,
+	['+'] = SDLK_KP_PLUS,  ['\r']= SDLK_KP_ENTER,   ['='] = SDLK_KP_EQUALS,
 };
 
 /*Dummy function*/

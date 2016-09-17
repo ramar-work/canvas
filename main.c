@@ -1,4 +1,5 @@
 /*A program to run tests and do all sorts of other things.*/
+#include "lite.h"
 #include <SDL/SDL.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -7,69 +8,8 @@
 
 /*Use timing...*/
 #define USETIMING
-
-#define opt(sht,lng) \
-	(sht && strcmp(*argv, sht) == 0) || (lng && strcmp(*argv, lng) == 0) 
-
-/*Check that option is set and cause the screen to refresh via 'co'*/
-#define optset(longName) \
-	((strcmp(eval->lng, longName) == 0) && (co = eval->set))
-
-/*Different shapes...*/
-#define Triangle(Pd,Pa,x1,y1,x2,y2,x3,y3) \
-	Pt Pa[] = {{x1,y1},{x2,y2},{x3,y3}}; \
-	Pd.length = sizeof(Pa)/sizeof(Pt); \
-	Pd.points = Pa
-
-#define Square(Pd,Pa,x1,y1,dist) \
-	Pt Pa[] = { \
-		{x1-(dist/2),y1-(dist/2)}, \
-		{x1-(dist/2),y1+(dist/2)}, \
-		{x1+(dist/2),y1+(dist/2)}, \
-		{x1+(dist/2),y1-(dist/2)}, \
-		{x1-(dist/2),y1-(dist/2)}, \
-	}; \
-	Pd.length = sizeof(Pa)/sizeof(Pt); \
-	Pd.points = Pa
-
-#define Rectangle(Pd,Pa,x1,y1,dist) \
-	Pt Pa[] = { \
-		{x1-(dist/2),y1-(dist/2)}, \
-		{x1-(dist/2),y1+(dist/2)}, \
-		{x1+(dist/2),y1+(dist/2)}, \
-		{x1+(dist/2),y1-(dist/2)}, \
-		{x1-(dist/2),y1-(dist/2)}, \
-	}; \
-	Pd.length = sizeof(Pa)/sizeof(Pt); \
-	Pd.points = Pa
-
-#define Hexagon(Pd,Pa,x1,y1,dist) \
-	Pt Pa[] = { \
-		{x1-(dist/2),y1-(dist/2)}, \
-		{x1-(dist/2),y1+(dist/2)}, \
-		{x1+(dist/2),y1+(dist/2)}, \
-		{x1+(dist/2),y1-(dist/2)}, \
-		{x1-(dist/2),y1-(dist/2)}, \
-	}; \
-	Pd.length = sizeof(Pa)/sizeof(Pt); \
-	Pd.points = Pa
-
-#define Trapezoid
-
-#define Parallelogram 
-
-#define Star 
-
-#define Convex
-
-#define NonConvex
-
-#define draw
-
-typedef struct Value Value;
-struct Value {
-	union { int32_t n; char *s; char c; void *v; } value;
-};
+#define aon(m) \
+	opt_set(opts, "--all") || opt_set(opts, m)
 
 struct Settings {
 	_Bool   slow;
@@ -78,45 +18,14 @@ struct Settings {
 	int32_t width;
 } settings;
 
-
-struct Resolutions { char *name; int32_t w, h; } resolutions[] = {
-	{ "320x240",    320, 240 },
-	{ "640x480",    640, 480 },
-	{ "800x600",    800, 600 },
-	{ "1024x600",  1024, 600 },
-	{ "1280x1000", 1024, 600 },
-	{ NULL,           0,   0 }
-};
-
-typedef struct Opt Opt;
-struct Opt {
-	_Bool set;  /*If set is not bool, it can define the order of demos*/
-	char  *sht, *lng; 
-	char  *description;
-	_Bool arg;
-	Value v;
-	void  (*callback)(char *av);
-	_Bool sentinel;
-};
-
-void drlin (Surface *win) {
-		//{{{30,400},{220,420},{210,440},{500,440},{180,420},{-1,-1}}, 0xffffff},// eww...
-	line(win, 30, 400, 220, 420, 0xffffff, 0xff);
-	line(win, 220,420, 210, 440, 0xffffff, 0xff);
-	line(win, 210,440, 500, 440, 0xffffff, 0xff);
-	line(win, 500,440, 180, 420, 0xffffff, 0xff);
-	SDL_UpdateRect(win->win, 0, 0, 0, 0);
-	getchar();
-}
-
-/* ------------------------------------------------------- *
-   -------------       DISPLAY            ----------------
- * ------------------------------------------------------- */
+typedef struct Test {
+	char *name; void (*test)(Surface *win); _Bool run; 
+} Test;
 
 /*transit - moves to the next frame and executes a function possibly (like playing music)*/
 #if 1
  #define transit(f) \
-		pause(2, 3000000);
+		__pause(2, 3000000);
 #else
  #define transit() getchar(); 
 #endif	
@@ -130,7 +39,7 @@ void fade_between (Surface *bg, int32_t start, int32_t end, int32_t step)
 	while (c > end) {
 		fill_display(bg, (c += step));
 		SDL_UpdateRect(bg->win, 0, 0, 0, 0);
-		pause(0, 70000000);
+		__pause(0, 70000000);
 	}
 }
 
@@ -180,7 +89,7 @@ void drawlines (Surface *bg) {
 		//Also show me adjustments when necessary
 		//fprintf(stdout, "Points %d,%d -> %d,%d\n", l->c0.x, l->c0.y, l->c1.x, l->c1.y);
 		//Find x or y intercept...
-		// sline(bg, l->c0.x, l->c0.y, l->c1.x, l->c1.y, l->color, 0xff, 0, NULL);
+		sline(bg, l->c0.x, l->c0.y, l->c1.x, l->c1.y, l->color, 0xff, 0, NULL);
 		l++;
 	}
 	SDL_UpdateRect(bg->win, 0, 0, 0, 0);
@@ -623,80 +532,70 @@ void drawgonz (Surface *win) {
 	SDL_UpdateRect(win->win, 0, 0, 0, 0);
 	getchar();
 }
+
+/* Selectable resolutions */
+struct Resolutions { char *name; int32_t w, h; } resolutions[] = {
+	{ "320x240",    320, 240 },
+	{ "640x480",    640, 480 },
+	{ "800x600",    800, 600 },
+	{ "1024x600",  1024, 600 },
+	{ "1280x1000", 1024, 600 },
+	{ NULL,           0,   0 }
+};
 	
-/* ------------------------------------------------------- *
-   -------------       END TESTS          ----------------
- * ------------------------------------------------------- */
-Opt opts[] = {
-	{ 0, NULL, "--log-file",  "Log all results to <file>", 1 },
-	{ 0, "-l", "--lines",     "Draw only lines." },
-	{ 0, "-p", "--polygons",  "Draw only polygons." },
-	{ 0, NULL, "--fills",     "Draw filled convex polygons." },
-	{ 0, "-g", "--glyphs",    "Draw glyphs." },
-	{ 0, "-c", "--circles",   "Draw only circles." },
-	{ 0, "-t", "--triangles", "Draw only triangles." },
-	{ 0, "-i", "--input",     "Test SDL input and KeySet routines." },
-	{ 0, "-s", "--slow",      "Draw everything slowly." },
-	{ 0, NULL, "--screen",    "Perform screen tests." },
-	{ 0, NULL, "--xxx",       "Find intercepts of lines bigger than surface area." },
-	{ 0, "-v", "--convex",    "Draw only convex polygons.         " },
-	{ 0, "-n", "--nonconvex", "Draw nonconvex polygons.           " },
-	{ 0, "-f", "--fade",      "Perform fade color tests.          " },
-	{ 0, NULL, "--scaling",   "Perform shape scale tests.         " },
-	{ 0, NULL, "--expansion", "Perform shape expansion tests.     " },
-	{ 0, NULL, "--motion",    "Perform shape motion tests.        " },
-	{ 0, NULL, "--transform", "Perform shape transformation tests." },
-	{ 0, NULL, "--rotate",    "Perform shape rotation tests.      " },
-	{ 0, NULL, "--resolution","Perform tests at specified resolution.", 1},
+/* End tests */ 
+Option opts[] = {
+#if 0
+	/*When this option is specified, command line will turn
+    off tests that are compiled in via tests.h           */
+	{ "-u", "--use-cli",   "Negate with flags (-DTESTS_H " \
+                         "must be compiled in)."          },
+#endif
+	/*Test controllers*/
+	{ "-a", "--all",       "Run all tests."                 },
+	{ "-l", "--lines",     "Draw only lines."               },
+	{ "-p", "--polygons",  "Draw only polygons."            },
+	{ NULL, "--fills",     "Draw filled convex polygons."   },
+	{ "-g", "--glyphs",    "Draw glyphs."                   },
+	{ "-c", "--circles",   "Draw only circles."             },
+	{ "-t", "--triangles", "Draw only triangles."           },
+	{ NULL, "--screen",    "Perform screen tests."          },
+	{ "-i", "--input",     "Test SDL input and KeySet " \
+                         "routines."                      },
+	{ "-v", "--convex",    "Draw only convex polygons."     },
+	{ "-n", "--nonconvex", "Draw nonconvex polygons."       },
+	{ "-f", "--fade",      "Perform fade color tests."      },
+	{ NULL, "--scaling",   "Perform shape scale tests."     },
+	{ NULL, "--expansion", "Perform shape expansion tests." },
+	{ NULL, "--motion",    "Perform shape motion tests."    },
+	{ NULL, "--transform", "Perform shape transformation " \
+                         "tests."                         },
+	{ NULL, "--rotate",    "Perform shape rotation tests."  },
+
+	/*Test parameters*/
+	{ NULL, "--log-file",  "Log all results to <file>", 1   },
+	{ "-s", "--slow",      "Draw everything slowly."        },
+	{ NULL, "--resolution","Perform tests at specified " \
+                         "resolution.",                   },
+
+	/*Edge case testing*/
+	{ NULL, "--xxx",       "Find intercepts of lines" \
+                         "bigger than surface area."      },
 	{ .sentinel=1 }
 };
 
-
-/*A usage function.*/
-void usage (Opt *opts, int status) {
-	while (!opts->sentinel) { 
-		if (!opts->arg) 
-			fprintf(stderr, "%-2s, %-20s %s\n", opts->sht ? opts->sht : " " , opts->lng, opts->description);
-		else {
-			char argn[1024]; memset(&argn, 0, 1024);
-			sprintf(argn, "%s <arg>", opts->lng);
-			fprintf(stderr, "%-2s, %-20s %s\n", opts->sht ? opts->sht : " " , argn, opts->description);
-		}
-		opts++;
-	}
-	exit(status);
-}
-
-
-
+#ifdef TESTS_H
+ #include "tests.h"
+#endif
 
 /* Main */
 int 
 main (int argc, char *argv[]) 
 {
 	if (argc < 2)
-		usage(opts, 0);
-	/*Evaulate options*/
-	while (*argv) {
-		Opt *o=opts;
-		while (!o->sentinel) {
-			//Find the option, then set the boolean, and optionally run some function or do that here...
-			if ((o->sht && strcmp(*argv, o->sht) == 0) || (o->lng && strcmp(*argv, o->lng) == 0)) {
-				o->set=1;
-				if (o->callback)
-					o->callback(*argv); 
-			}
-			o++;
-		}
-		argv++;
-	}
-
-	/*Just for testing options*/
-	Opt *all=opts;
-	while (!all->sentinel) {
-		fprintf(stderr, "%20s: %s\n", all->lng, all->set ? "true" : "false");
-		all++;
-	}
+		opt_usage(opts, "Nothing to do.", 0);
+	else
+		opt_eval(opts, argc, argv);
 
 #if 0
 	/*Have yet to make Engine datatype*/
@@ -712,40 +611,28 @@ main (int argc, char *argv[])
 	int on = 1;
 #endif
 
-	/*Select log file.*/
-	//std = (opts.log_filename) ? fopen("canvas", "w+") : stderr;
-	
 	/*Event and input setup*/
 	SDL_Event event;
 
-	/*Evaluate each thing*/
-	Opt *eval=opts;
-	while (!eval->sentinel) {
-		/*Option evaluation*/
-		int co=0;
-		if (optset("--lines"))
-			drawlines(&Win);	
-		else if (optset("--circles")) 
-			drawcircles(&Win);
-		else if (optset("--polygons")) 
-			drawgonz(&Win);
-			//drawngons(&Win);
-		else if (optset("--triangles")) 
-			drawtriangles(&Win);
-		else if (optset("--glyphs")) 
-			drawglyphs(&Win);
-		else if (optset("--fills")) 
-			fillConvexGon(&Win);
-		else if (optset("--fade")) 
-			fade_between(&Win, 0xffffff, 0x000000, -0x111111);
+ #ifndef TESTS_H
+	/*Define which tests to run*/
+	Test tests[] = {
+		{ "lines",     drawlines     , aon("--lines")     },  
+		{ "circles",   drawcircles   , aon("--circles")   },  
+		{ "triangles", drawtriangles , aon("--triangles") },  
+		{ "gons",      drawngons     , aon("--polygons")  },  
+		{ "gons2",     drawngons     , aon("--convex")    },  
+		{ "glyphs",    drawglyphs    , aon("--glyphs")    },  
+	};
+ #endif
 
-		/*Do it if we got something*/
-		if (co) {
-			/*I want the total clock time, a pause and a fade before the next test*/
+	/*Run each test*/
+	for (int i=0; i<sizeof(tests)/sizeof(Test); i++) {
+		if (tests[i].run) {
+			tests[i].test(&Win);
 			fade_between(&Win, 0xffffff, 0x000000, -0x111111);
 		}
-		eval++;
-	}
+	}	
 
 	/*Close log file and free anything*/
 	//if (opts.log_filename) fclose(std);
