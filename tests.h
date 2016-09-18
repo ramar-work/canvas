@@ -1,4 +1,5 @@
 /*Compiled in tests when the list gets longer*/
+
 Test tests[] = {
 	{ "lines",     drawlines     , 1 },  
 	{ "circles",   drawcircles   , 1 },  
