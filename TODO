@@ -1,7 +1,3 @@
-x *refactor your tests to maintain your sanity
-	struct Test { char *name, _Bool run, void (*test)(args...) }[]
-x *use lite for options instead of custom rolled Opt, b/c it's also long
-x *remove the extra defines that draw common shapes. I don't use them anywhere else and they're ugly and they're primitives...
 
 *auto null values (values for each of the primitive structures that canvas will know are always false)
 
@@ -25,14 +21,6 @@ x *remove the extra defines that draw common shapes. I don't use them anywhere e
 
 *detect line start (we can't draw past zero and can't draw past surface)
 
-x *tests should just be data structures too
-	what is a line but { a, b, color }
-	what is a circle but { pt, radius, color, fill }
-	what is a triangle but { pt, pt, pt, color, fill }
-	what is a rectangle but { pt, width?, height, color, fill }
-	what is a polygon but { pt * } (this one admittedly, is a little harder...)
-	you can test that it worked by looking and also by sampling the pixel in the surface...
-
 *tracking test failures (?)
 
 *call randseed once when initializing SDL (or canvas or what the hell ever)
@@ -43,18 +31,7 @@ x *tests should just be data structures too
 
 *timing library
 
-*use a define for 
-x	being verbose
-x	drawing slow
-x	drawing by interrupt (both can't be enabled cleanly)
-		(drawing per point isn't helpful b/c it's so slow)
-x	pause
-
-*hold function (use events to get signal instead of getchar())
-
 *ONE line function (you've got 3 right now)
-
-x *coord is useless... (it's gone)
 
 - *debug your polygon fill routine
 

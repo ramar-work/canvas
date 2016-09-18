@@ -1,4 +1,6 @@
-?
+canvas
+------
 
-Lots of projects with SDL.
-
+<p>
+Documentation is coming soon.
+</p>
