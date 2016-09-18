@@ -7,15 +7,12 @@
 #include "canvas.h"
 #include "lite.h"
 
-//#ifdef CV_DEBUG  /*Eventually this is all DEBUG or NDEBUG or something*/
-#if 1
- #if 1
+#ifdef CV_DEBUG  /*Eventually this is all DEBUG or NDEBUG or something*/
  inline void __pause (uint32_t secs, uint32_t nsecs) { 
 	//struct timespec ts = { .tv_nsec = nsecs };
 	struct timespec ts = { .tv_sec = secs, .tv_nsec = nsecs };
 	nanosleep(&ts, NULL);
  }
- #endif
 
  inline void pauseX (Pause *time) {
  	/*Math is needed to take this to a regular level*/
@@ -230,27 +227,41 @@ sortPts (Pt *pts, _Bool axis/*True = Y*/, _Bool order/*True = get max*/) {
 	return b;
 }
 
-/* ---------------- LINES ----------------------- */
+
 /*Plot points, checking that each is within range*/
 inline void 
 plot (Surface *win, int32_t x, int32_t y, uint32_t c, uint32_t op) {
+	#ifdef CV_BOUND_CHECK
 	/*Check that we're within bounds.*/ 
-	if (((y * win->w) + x >= win->w * win->h) || x<0 || y<0) {
-		//fprintf(stderr, "ERR: Value %d too great for plot!\n", (y * win->w) + x);
+	if (((y * win->w) + x >= win->w * win->h) || x<0 || y<0)	
+		#ifdef CV_VERBOSITY
+	{
+		fprintf(stderr, "ERR: Value %d too great for plot!\n", (y * win->w) + x);
 		return;
-	} 
+	}
+		#else
+		return;
+		#endif
+	#endif
 	
 	/*Color the point*/
-	int *pix = ((int*)win->win->pixels) + (y * win->w) + x;
+	int *pix = ((int *)win->win->pixels) + (y * win->w) + x;
 	*pix = fillPix(c, 0); 
 
- #ifdef SLOW
-	/*Move super slowly*/
-	__pause(0, SPEED);
+	/*Choose whether or not to control plotting speed by hand or by timer*/
+ #ifdef CV_SLOW_PLOT
+	__pause(0, CV_SPEED);
+	SDL_UpdateRect(win->win, 0,0,0,0);
+ #endif
+ #ifdef CV_INTERRUPT_PLOT 
+	//__pause(0, CV_SPEED);
+	//hold();
+	fprintf(stderr, "Waiting on input event...\n"); getchar();
 	SDL_UpdateRect(win->win, 0,0,0,0);
  #endif
 }
 
+#if 1
 inline void 
 nplot (Surface *win, int32_t x, int32_t y, uint32_t c, uint32_t op, Pt *ptlist) {
 	if (((y * win->w) + x >= win->w * win->h) || x<0 || y<0) {
@@ -269,7 +280,7 @@ nplot (Surface *win, int32_t x, int32_t y, uint32_t c, uint32_t op, Pt *ptlist) 
 	int *pix = ((int*)win->win->pixels) + (y * win->w) + x;
 	*pix = fillPix(c, 0xffffff); 
 }
-
+#endif
 
 /*...*/
 inline void 

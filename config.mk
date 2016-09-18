@@ -16,18 +16,18 @@ SHARED_LDFLAGS =
 CC = cc
 #CC = clang
 
-# Linux
-# Modify these to fit your system.
-#	-DVERBOSE        - Be verbose
-#	-DFASTLINES      - Use fast line optimizations
-#	-DSLOW           - Plot slowly
-#	-DSPEED=N        - Update screen every N nanoseconds. 
-#	-DBOUNDS_CHECK   - Do bounds checking at plot
-#	-DBOUNDS_CHECKL  - Do bounds checking at line 
-#	-DDEBUG          - Do bounds checking at line 
-#  -DGIANTSCREEN    - Use 32 bit integers for large surfaces
-DFLAGS = -DDEBUG \
-	-DBOUNDS_CHECK
+# What follows is a list of defines for compiling in certain features:
+# -DCV_PRIMBOOLS      - Let drawing primitives return bools to combine calls
+#	-DCV_VERBOSITY      - Be verbose (levels can be 1 - 4?)
+#	-DCV_FASTLINES      - Use fast line optimizations
+#	-DCV_BOUND_CHECK    - Do bounds checking at plot
+#	-DCV_INTERRUPT_PLOT - Use an event to control speed of plotting each point.
+#	-DCV_SLOW_PLOT      - Use a timer to slow speed of plotting each point.
+# -DCV_SPEED=n        - Define how quickly the timer should fire
+# -DCV_GIANT_SCREEN   - Use 32 bit integers for large surfaces
+DFLAGS = -DCV_DEBUG \
+	-DCV_BOUND_CHECK
+	#-DCV_INTERRUPT_PLOT
 	#-DTESTS_H #-DFASTLINES #-DSLOW -DSPEED=4000 #-DVERBOSE -DBOUNDS_CHECK
 
 # Performance profiling, comment this if you want none...

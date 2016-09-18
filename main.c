@@ -7,6 +7,7 @@
 #include <math.h>
 
 /*Use timing...*/
+#define CV_SPEED 1
 #define USETIMING
 #define aon(m) \
 	opt_set(opts, "--all") || opt_set(opts, m)
@@ -19,22 +20,33 @@ struct Settings {
 } settings;
 
 typedef struct Test {
-	char *name; void (*test)(Surface *win); _Bool run; 
+	char *name; 
+	void (*test)(Surface *win, void *data); 
+	_Bool run; 
+	void *data;
 } Test;
 
-/*transit - moves to the next frame and executes a function possibly (like playing music)*/
-#if 1
- #define transit(f) \
-		__pause(2, 3000000);
-#else
- #define transit() getchar(); 
-#endif	
 
+/*Temporary measure while we're missing a Line structure*/
+typedef	struct LineP { 
+	Pt c0, c1; int32_t color; _Bool sentinel; 
+} LineP;
+	
+struct polytype {
+	int32_t length;     /*Height of the polygon*/
+	int32_t *trace;     /*....*/
+	int32_t tlen;
+//we also know that there will be at least a multiple of two points
+//(height * 2)  = the amount of x points that we'll need to track
+	int32_t beg, end;   /*These should only be one point.*/
+	int32_t top, bot;   /*These should only be one point.*/
+};
+
+typedef struct PolyP { 
+	Pt p[20]; int32_t color; struct polytype Py; _Bool sentinel; } PolyP;
 
 /*Control a fade effect*/
-void fade_between (Surface *bg, int32_t start, int32_t end, int32_t step) 
-{
-	/*Pixel density should probably be done...*/
+void fade_between (Surface *bg, int32_t start, int32_t end, int32_t step) {
 	int32_t c=start;
 	while (c > end) {
 		fill_display(bg, (c += step));
@@ -44,46 +56,25 @@ void fade_between (Surface *bg, int32_t start, int32_t end, int32_t step)
 }
 
 
-/* ------------------------------------------------------- *
-   -------------       LINES              ----------------
- * ------------------------------------------------------- */
-void drawlines (Surface *bg) {
+/*Draws some simple plots.*/
+void drawplots (Surface *bg, void *data) {
+	Pt *p = (Pt *)data;
+	while (p->x > -1) {
+		nplot(bg, p->x, p->y, 0xffffff, 0xff, NULL);
+		p++;
+	}
+
+	SDL_UpdateRect(bg->win, 0, 0, 0, 0);
+}
+
+
+/*Draws some simple lines*/
+void drawlines (Surface *bg, void *data) {
 	int32_t tw=bg->w;
 	int32_t th=bg->h;
 	int32_t ww=settings.width; 
 	int32_t hh=settings.width; 
-	struct LineP { Pt c0, c1; int32_t color; _Bool sentinel; } Lines[] = {
-		/*These lines are all green because drawing should work.*/
-		{{tw/2,  0},{tw/2,th}, 0x00ff00},  
-		{{ 0,   th},{tw,   0}, 0x00ff00},  
-		{{ 0, th/2},{tw,th/2}, 0x00ff00},  
-		{{ 0,    0},{tw,  th}, 0x00ff00},  
-	#if 0
-		{{ 40,   0},{ ww, hh}, 0x00ff00},  
-		{{ 50,   0},{ ww, hh}, 0x00ff00},  
-		{{ 60,   0},{ ww, hh}, 0x00ff00},  
-		{{ 70,   0},{ ww, hh}, 0x00ff00},  
-	#endif
-		/*These lines are red because some will fail.*/
-	#if 1
-		{{-120,-10},{-120,99}, 0xff0000}, /*Both X's are negative, should fail*/
-		{{-120,-10},{  30,99}, 0xff0000}, /*Should draw, but find the right intc*/
-		{{  10,-10},{  1,-80}, 0xff0000}, /*Both Y's are negative, should fail*/
-		{{ -40, 10},{  30,99}, 0xff0000}, /*Should draw, */
-		{{ 120,-10},{-300,82}, 0xff0000}, /*Should draw, */
-	#endif
-		{{200, 200},{201, 400}, 0xffffff},
-		{{100, 200},{130, 400}, 0xffffff},
-		{{380, 200},{390, 400}, 0xffffff},
-		{{510, 200},{450, 400}, 0xffffff},
-		{{200, 200},{201, 400}, 0xffffff},
-		{{-100,200},{130, 400}, 0xffffff},
-		{{380, 200},{390, 400}, 0xffffff},
-		{{-510,200},{450, 400}, 0xffffff},
-		{.sentinel=1},
-	};
-
-	struct LineP *l=Lines;
+	LineP *l = (LineP *)data;
 	/*I want to see the difference in speeds between lines that can be drawn and those that can't...*/
 	while (!l->sentinel) {
 		//Also show me adjustments when necessary
@@ -92,8 +83,6 @@ void drawlines (Surface *bg) {
 		sline(bg, l->c0.x, l->c0.y, l->c1.x, l->c1.y, l->color, 0xff, 0, NULL);
 		l++;
 	}
-	SDL_UpdateRect(bg->win, 0, 0, 0, 0);
-	transit();	
 }
 
 
@@ -101,7 +90,7 @@ void drawlines (Surface *bg) {
    -------------       CIRCLES            ----------------
  * ------------------------------------------------------- */
 /*Just draw random circles under a certain number.*/
-void drawcircles (Surface *bg) 
+void drawcircles (Surface *bg, void *data) 
 {
 	for (int i=0; i<100; i++) {
 		int32_t x = rwr(0, bg->w);
@@ -110,13 +99,10 @@ void drawcircles (Surface *bg)
 		uint32_t clr = urwr(0x000000, 0xffffff);
 		circle(bg, x, y, rad, clr, 0xff);
 	}
-
-	SDL_UpdateRect(bg->win, 0, 0, 0, 0);
-	transit();
 }
 
 
-void drawtriangles (Surface *bg) {
+void drawtriangles (Surface *bg, void *data) {
 
 }
 
@@ -188,54 +174,16 @@ find_quadrant (Pt *of, Pt *len, int32_t xmp, int32_t ymp)
 
 
 /*Let's do a bunch of simple shapes*/
-void drawngons (Surface *win) 
+void drawngons (Surface *win, void *data) 
 {
 	/*Filled and unfilled*/
 	/*Let's just try fills, NOTE: these are all CONVEX polygons*/
-	struct polytype {
-		int32_t length;     /*Height of the polygon*/
-		int32_t *trace;     /*....*/
-		int32_t tlen;
-	//we also know that there will be at least a multiple of two points
-	//(height * 2)  = the amount of x points that we'll need to track
-		int32_t beg, end;   /*These should only be one point.*/
-		int32_t top, bot;   /*These should only be one point.*/
-	};
-
-	/*Nonconvex may cause crashes...*/
-	struct PolyP { Pt p[20]; int32_t color; struct polytype Py; _Bool sentinel; } Polys[] = {
-	#if 0
-		/*Simple polygons*/
-		{{{100,98},{50,200} ,{150,230},{-1,-1}}, 0xffffff           /*Triangle*/          },
-		{{{300,300},{200,300},{200,200},{300,200},{-1,-1}}, 0xffffff/*Square*/            },
-		{{{ 30,400},{500,420},{210,440},{ 50,450},{ 20,420},{-1,-1}}, 0xffffff},// eww...
-		{{{200,400},{220,420},{210,440},{190,440},{180,420},{-1,-1}}, 0xffffff},// eww...
-
-		/*Complete width and height polygons*/
-		{{{0,0},{639,0},{639,330},{0,200},{-1,-1}}, 0xbbbbbb        /*top half of screen*/},
-		{{{0,200},{0,479},{639,479},{639,330},{-1,-1}}, 0x3f3f3f    /*bot half of screen*/},
-	#endif
-		/*Weird polygons*/	
-	  //{{{0,400},{100,479},{200,309},{-1,-1}}, 0x414141                                  },
-	  {{{200,309},{0,400},{100,479},{-1,-1}}, 0x414141                                  },
-		{{{0,400},{0,479},{100,479},{-1,-1}}, 0x9998b0                           },
-		{{{0,200},{0,479},{639,479},{639,330},{-1,-1}}, 0x123fff             },
-		{{{0,0},{640,0},{640,230},{0,100},{-1,-1}}, 0x323f1f },
-
-		#if 0 /*These test points outside of the surface.*/
-		{{{30,400},{220,420},{210,9999},{500,10321},{180,10024},{-1,-1}}, 0xffffff},// eww...
-		{{{30,400},{20,420},{610,9999},{500,10321},{-1,-1}},0xffffff},// eww...
-		#endif
-		{.sentinel=1}
-	};
-	
-	/*Check for pinching (or sort, without changing order)*/
 
 	/*Set things that should be calc'd once and references*/
 	SDL_Event se;
 	uint32_t H = win->h - 1; 
 	uint32_t W = win->w - 1;
-	struct PolyP *p=Polys;
+	PolyP *p=(PolyP *)data;
 
 #if 0
 	while (!p->sentinel) {
@@ -426,9 +374,6 @@ void drawngons (Surface *win)
 		fill_display(win, 0x000000);
 		SDL_UpdateRect(win->win, 0, 0, 0, 0);
 	}
-
-	SDL_UpdateRect(win->win, 0, 0, 0, 0);
-	transit();
 #endif
 }
 
@@ -499,13 +444,10 @@ void fillConvexGon (Surface *bg) {
 		/*Then render the filled polygon*/
 		p++;
 	}
-
-	SDL_UpdateRect(bg->win, 0, 0, 0, 0);
-	transit();
 }
 
 
-void drawglyphs (Surface *win) {
+void drawglyphs (Surface *win, void *data) {
 	return;
 }
 
@@ -553,6 +495,7 @@ Option opts[] = {
 #endif
 	/*Test controllers*/
 	{ "-a", "--all",       "Run all tests."                 },
+	{ "-o", "--plots",     "Draw only plots."               },
 	{ "-l", "--lines",     "Draw only lines."               },
 	{ "-p", "--polygons",  "Draw only polygons."            },
 	{ NULL, "--fills",     "Draw filled convex polygons."   },
@@ -588,6 +531,12 @@ Option opts[] = {
  #include "tests.h"
 #endif
 
+#ifndef TESTS_DATA_PATH
+ #include "data.c"
+#else
+ #error "Defining an alternate file for test data is not yet supported."
+#endif
+
 /* Main */
 int 
 main (int argc, char *argv[]) 
@@ -617,19 +566,26 @@ main (int argc, char *argv[])
  #ifndef TESTS_H
 	/*Define which tests to run*/
 	Test tests[] = {
-		{ "lines",     drawlines     , aon("--lines")     },  
-		{ "circles",   drawcircles   , aon("--circles")   },  
-		{ "triangles", drawtriangles , aon("--triangles") },  
-		{ "gons",      drawngons     , aon("--polygons")  },  
-		{ "gons2",     drawngons     , aon("--convex")    },  
-		{ "glyphs",    drawglyphs    , aon("--glyphs")    },  
+		{ "plots",     drawplots     , aon("--plots")    , (void*)Points   },
+		{ "lines",     drawlines     , aon("--lines")    , (void*)Lines    },
+		{ "circles",   drawcircles   , aon("--circles")  , NULL            },
+		{ "triangles", drawtriangles , aon("--triangles"), NULL            },
+		{ "gons",      drawngons     , aon("--polygons") , NULL            },
+		{ "gons2",     drawngons     , aon("--convex")   , NULL            },
+		{ "glyphs",    drawglyphs    , aon("--glyphs")   , NULL            },
 	};
  #endif
 
 	/*Run each test*/
 	for (int i=0; i<sizeof(tests)/sizeof(Test); i++) {
 		if (tests[i].run) {
-			tests[i].test(&Win);
+			if (!tests[i].data) {
+				fprintf(stderr, "No tests specified for module %s\n", tests[i].name);
+				continue;
+			}
+			tests[i].test(&Win, tests[i].data);
+			SDL_UpdateRect(Win.win, 0, 0, 0, 0);
+			__pause(2, 3000000);
 			fade_between(&Win, 0xffffff, 0x000000, -0x111111);
 		}
 	}	

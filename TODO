@@ -3,7 +3,29 @@ x *refactor your tests to maintain your sanity
 x *use lite for options instead of custom rolled Opt, b/c it's also long
 x *remove the extra defines that draw common shapes. I don't use them anywhere else and they're ugly and they're primitives...
 
-*tests should just be data structures too
+*auto null values (values for each of the primitive structures that canvas will know are always false)
+
+*canvas data structure (prevents relying on anything global)
+	keep event queue
+	keep ALL surfaces (choose by index and cycle from here)
+	sprites and entities go here eventually
+		(their methods are self contained)
+	window / display?
+	colorscheme?
+	current loop?
+	key map?
+	charset
+
+*seperate data and tests
+	data can be as long or as short as you want and included in
+
+*detect top of polygons (it's just a point)
+
+*detect edge type (for polygons to detect convex vs nonconvex)
+
+*detect line start (we can't draw past zero and can't draw past surface)
+
+x *tests should just be data structures too
 	what is a line but { a, b, color }
 	what is a circle but { pt, radius, color, fill }
 	what is a triangle but { pt, pt, pt, color, fill }
@@ -11,24 +33,30 @@ x *remove the extra defines that draw common shapes. I don't use them anywhere e
 	what is a polygon but { pt * } (this one admittedly, is a little harder...)
 	you can test that it worked by looking and also by sampling the pixel in the surface...
 
+*tracking test failures (?)
+
 *call randseed once when initializing SDL (or canvas or what the hell ever)
+
 *use bools or ints to return tests, 
 	bools to tell if things failed
 	ints to return things like timing and iterations
-*use a define for 
-	being verbose
-	drawing slow
-	drawing by interrupt (both can't be enabled cleanly)
-		(drawing per point isn't helpful b/c it's so slow)
-	pause
-*ONE line function (you've got 3 right now)
-*coord is useless...
-*debug your polygon fill routine
 
-defines
-=======
-slow draw
-interrupt draw
+*timing library
+
+*use a define for 
+x	being verbose
+x	drawing slow
+x	drawing by interrupt (both can't be enabled cleanly)
+		(drawing per point isn't helpful b/c it's so slow)
+x	pause
+
+*hold function (use events to get signal instead of getchar())
+
+*ONE line function (you've got 3 right now)
+
+x *coord is useless... (it's gone)
+
+- *debug your polygon fill routine
 
 debug
 =====
